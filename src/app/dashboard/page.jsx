@@ -1,14 +1,15 @@
 "use client";
-import * as React from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { NumericFormat } from "react-number-format";
-import InputMask from "react-input-mask"; // Importação para usar máscara
-
+import InputMask from "react-input-mask";
+import BadgeIcon from "@mui/icons-material/Badge";
 import {
   createTheme,
   ThemeProvider,
+  CssBaseline,
   AppBar,
   Toolbar,
   Grid,
@@ -16,10 +17,11 @@ import {
   TextField,
   MenuItem,
   Button,
+  Menu,
   IconButton,
   Tooltip,
   Modal,
-  select,
+  Select,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -30,8 +32,14 @@ import PeopleIcon from "@mui/icons-material/People";
 import StoreIcon from "@mui/icons-material/Store";
 import LocalConvenienceStoreIcon from "@mui/icons-material/LocalConvenienceStore";
 import Logo from "@/assets/img/logo_logaux_v3.png";
-import { Business, DirectionsBusRounded, DriveEtaRounded, Padding } from "@mui/icons-material";
-
+import LogoutIcon from "@mui/icons-material/Logout";
+import {
+  Business,
+  DirectionsBusRounded,
+  DriveEtaRounded,
+  Padding,
+} from "@mui/icons-material";
+import { Brightness4, Brightness7 } from "@mui/icons-material";
 import {
   TableContainer,
   Table,
@@ -41,39 +49,233 @@ import {
   TableBody,
 } from "@mui/material";
 
-// Função para criar tema com suporte a modo escuro/claro
 const createDemoTheme = (isDarkMode) =>
   createTheme({
     palette: {
       mode: isDarkMode ? "dark" : "light",
       primary: { main: "#091f33" },
-      background: { default: "#091f33", paper: "#091f33" },
-      text: { primary: "#ffffff", secondary: "#ffffff" },
-      divider: "#ffffff",
+      background: {
+        default: isDarkMode ? "#121212" : "#ffffff",
+        paper: isDarkMode ? "#1e1e1e" : "#f5f5f5",
+      },
+      text: {
+        primary: isDarkMode ? "#ffffff" : "#000000",
+        secondary: isDarkMode ? "#cfcfcf" : "#5f5f5f",
+      },
     },
-    typography: { allVariants: { color: "#ffffff" } },
+    typography: {
+      allVariants: {
+        color: isDarkMode ? "#ffffff" : "#000000",
+        transition: "color 0.3s ease",
+      },
+    },
+    components: {
+      MuiTypography: {
+        styleOverrides: {
+          root: {
+            color: isDarkMode ? "#ffffff" : "#000000",
+            transition: "color 0.3s ease",
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            transition: "background-color 0.3s ease, color 0.3s ease",
+            "& label.Mui-focused": {
+              color: isDarkMode ? "#ffffff" : "#000000",
+            },
+            "& input": {
+              color: isDarkMode ? "#ffffff" : "#000000",
+            },
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+              "& fieldset": {
+                borderColor: isDarkMode ? "#ffffff" : "#000000",
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
-// Cabeçalho com logotipo
-function Header() {
+function Header({ isDarkMode, toggleTheme }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const open = Boolean(anchorEl);
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    setModalOpen(true);
+    handleClose();
+  };
+
   return (
-    <AppBar position="static" color="primary">
-      <Toolbar sx={{ justifyContent: "center" }}>
-        {/* <DirectionsBusRounded/> */}
-        <Box sx={{ height: 40, margin: 4 }}>
-          <Image src={Logo} alt="Logaux logo" width={250} height={250} />
+    <AppBar position="static">
+      <Toolbar
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "15px",
+          alignItems: "center",
+          position: "relative",
+        }}
+      >
+        <Box sx={{ position: "absolute", left: 16 }}>
+          <Tooltip title="Dados do Motorista" arrow>
+            <IconButton
+              color="inherit"
+              onClick={handleMenuClick}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "transparent", // Remove o fundo branco no hover
+                },
+              }}
+            >
+              <BadgeIcon />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            PaperProps={{
+              sx: {
+                backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                color: isDarkMode ? "#ffffff" : "#000000",
+              },
+            }}
+          >
+            <MenuItem onClick={handleProfileClick}>
+              Perfil Do Motorista
+            </MenuItem>
+          </Menu>
         </Box>
+
+        <Box sx={{ height: 40 }}>
+          <Image
+            src={Logo}
+            alt="Logaux logo"
+            width={220}
+            height={80}
+            priority
+          />
+        </Box>
+
+        <Box
+          sx={{
+            position: "absolute",
+            right: 16,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <Tooltip
+            title={isDarkMode ? "Desativar modo escuro" : "Ativar modo escuro"}
+            arrow
+          >
+            <IconButton
+              onClick={toggleTheme}
+              color="inherit"
+              sx={{
+                "&:hover": {
+                  backgroundColor: "transparent", 
+                },
+              }}
+            >
+              {isDarkMode ? <Brightness7 /> : <Brightness4 />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Modal de Perfil do Motorista */}
+        <Modal
+          open={modalOpen}
+          onClose={() => {}} 
+          disableEscapeKeyDown
+          BackdropProps={{
+            onClick: (e) => e.stopPropagation(),
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: isDarkMode ? "#1e1e1e" : "#ffffff",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              width: "90%", 
+              maxWidth: 500, 
+              minHeight: 350, 
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center", 
+              alignItems: "center",
+              color: isDarkMode ? "#ffffff" : "#000000",
+              textAlign: "center",
+              border: `4px solid ${isDarkMode ? "#ffffff" : "#052c65"}`,
+            }}
+          >
+            <IconButton
+              onClick={() => setModalOpen(false)}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                color: isDarkMode ? "#ffffff" : "#000000",
+                transition: "color 0.3s ease",
+                "&:hover": { color: "#ff4444", backgroundColor: "transparent" },
+              }}
+            >
+              ✖
+            </IconButton>
+
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: "bold",
+                color: isDarkMode ? "#ffffff" : "#000000",
+                mt: 2,
+              }}
+            >
+              Perfil do Motorista
+            </Typography>
+
+            <Box sx={{ width: "100%", maxWidth: 400, mt: 3 }}>
+              <Typography variant="body1" sx={{ fontSize: "1.1rem", mb: 2 }}>
+                <strong>Nome:</strong> João da Silva
+              </Typography>
+              <Typography variant="body1" sx={{ fontSize: "1.1rem", mb: 2 }}>
+                <strong>Idade:</strong> 45 anos
+              </Typography>
+              <Typography variant="body1" sx={{ fontSize: "1.1rem", mb: 2 }}>
+                <strong>CNH:</strong> AB123456
+              </Typography>
+              <Typography variant="body1" sx={{ fontSize: "1.1rem", mb: 2 }}>
+                <strong>Placa do Veículo:</strong> XYZ-5678
+              </Typography>
+            </Box>
+          </Box>
+        </Modal>
       </Toolbar>
     </AppBar>
   );
 }
-
-// Definição dos formulários
 const formularios = {
   "novo-embarque": {
     title: "Nova Viagem",
     fields: [
-      // { name: "data", label: "Data" },
       {
         name: "placaVeiculo",
         label: "Placa do Veiculo",
@@ -187,17 +389,22 @@ const formularios = {
     title: "Consultas",
     fields: [
       { name: "consultaInicio", label: "Inicio" },
-      { name: "consultaFim", label: "Fim" },
-      { name: "statusAcerto", label: "Acerto" },
+      // { name: "consultaFim", label: "Fim" },
+      // { name: "statusAcerto", label: "Acerto" },
     ],
   },
 };
 
-// Componente de formulário dinâmico
-function FormularioPadrao({ title, fields, onBack }) {
+function FormularioPadrao({ title, fields, onBack, isDarkMode }) {
   const [formData, setFormData] = React.useState(
     fields.reduce((acc, field) => ({ ...acc, [field.name]: "" }), {})
   );
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    console.log("Dados enviados:", formData);
+  };
 
   const [modalOpen, setModalOpen] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState("");
@@ -212,17 +419,48 @@ function FormularioPadrao({ title, fields, onBack }) {
     });
     handleCloseModal();
   };
-
+  const [hovered, setHovered] = useState(false);
   const handleChange = (event) => {
     setFormData({ ...formData, [event.target.name]: event.target.value });
   };
+  const [filtroStatus, setFiltroStatus] = useState("todos");
 
   return (
     <Box sx={{ p: 4, maxWidth: 600, mx: "auto" }}>
-      <IconButton onClick={onBack} sx={{ color: "#ffffff", mr: 1 }}>
-        <ArrowBackIcon />
-      </IconButton>
-      <Typography variant="h4" sx={{ color: "#ffffff" }}>
+      <Tooltip title="Voltar para o menu principal" arrow>
+        <IconButton
+          onClick={onBack}
+          onMouseEnter={() => {
+            if (window.innerWidth > 768) setHovered(true);
+          }}
+          onMouseLeave={() => {
+            if (window.innerWidth > 768) setHovered(false);
+          }}
+          sx={{
+            color: isDarkMode ? "#ffffff" : "#000000",
+            transition: "color 0.3s ease",
+            "&:hover": {
+              color: window.innerWidth > 768 ? "#ff4444" : undefined,
+              backgroundColor: "transparent",
+            },
+          }}
+        >
+          {window.innerWidth > 768 && hovered ? (
+            <LogoutIcon />
+          ) : (
+            <ArrowBackIcon />
+          )}
+        </IconButton>
+      </Tooltip>
+
+      <Typography
+        variant="h4"
+        sx={{
+          color: isDarkMode ? "#ffffff" : "#000000",
+          textAlign: "center",
+          mt: 2,
+        }}
+      >
         {title}
       </Typography>
       <Box component="form">
@@ -245,29 +483,60 @@ function FormularioPadrao({ title, fields, onBack }) {
                   value={formData[field.name]}
                   onClick={handleOpenModal}
                   InputProps={{
-                    style: { color: "#ffffff", cursor: "pointer" },
+                    style: { color: isDarkMode ? "#ffffff" : "#000000" },
                   }}
-                  InputLabelProps={{ style: { color: "#ffffff" } }}
+                  InputLabelProps={{
+                    style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+                  }}
                   sx={{
                     "& .MuiOutlinedInput-root": { borderColor: "#ffffff" },
                   }}
                 />
-                <Modal open={modalOpen} onClose={handleCloseModal}>
+                <Modal open={modalOpen} onClose={() => {}}>
                   <Box
                     sx={{
                       position: "absolute",
                       top: "50%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
-                      bgcolor: "#091f33",
+                      bgcolor: "#052c65",
                       boxShadow: 24,
                       p: 4,
                       borderRadius: 2,
+                      width: "90%",
+                      maxWidth: 500,
+                      color: "#ffffff",
                     }}
                   >
-                    <Typography sx={{ color: "#ffffff", mb: 2 }}>
-                      Selecione Cliente e Cidade
-                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 2,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: "bold", color: "#ffffff" }}
+                      >
+                        Selecione Cliente e Cidade
+                      </Typography>
+                      <IconButton
+                        onClick={handleCloseModal}
+                        sx={{
+                          color: "#ffffff",
+                          transition: "color 0.3s ease",
+                          "&:hover": {
+                            color: "#ff4444",
+                            backgroundColor: "transparent",
+                          },
+                        }}
+                      >
+                        ✖
+                      </IconButton>
+                    </Box>
+
                     <TextField
                       fullWidth
                       label="Cliente"
@@ -276,11 +545,15 @@ function FormularioPadrao({ title, fields, onBack }) {
                       value={selectedClient}
                       onChange={(e) => setSelectedClient(e.target.value)}
                       InputProps={{ style: { color: "#ffffff" } }}
-                      InputLabelProps={{ style: { color: "#ffffff" } }}
+                      InputLabelProps={{ style: { color: "#cfcfcf" } }}
                       sx={{
-                        "& .MuiOutlinedInput-root": { borderColor: "#ffffff" },
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#1e1e1e",
+                          "& fieldset": { borderColor: "#ffffff" },
+                        },
                       }}
                     />
+
                     <TextField
                       fullWidth
                       label="Cidade"
@@ -289,11 +562,15 @@ function FormularioPadrao({ title, fields, onBack }) {
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
                       InputProps={{ style: { color: "#ffffff" } }}
-                      InputLabelProps={{ style: { color: "#ffffff" } }}
+                      InputLabelProps={{ style: { color: "#cfcfcf" } }}
                       sx={{
-                        "& .MuiOutlinedInput-root": { borderColor: "#ffffff" },
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: "#1e1e1e",
+                          "& fieldset": { borderColor: "#ffffff" },
+                        },
                       }}
                     />
+
                     <Button
                       variant="contained"
                       onClick={handleSelect}
@@ -320,11 +597,18 @@ function FormularioPadrao({ title, fields, onBack }) {
                 margin="normal"
                 fullWidth
                 select
-                InputProps={{ style: { color: "#ffffff" } }}
-                InputLabelProps={{ style: { color: "#ffffff" } }}
+                InputProps={{
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
+                }}
+                InputLabelProps={{
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+                }}
                 sx={{
-                  "& .MuiOutlinedInput-root fieldset": {
-                    borderColor: "#ffffff",
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               >
@@ -353,11 +637,18 @@ function FormularioPadrao({ title, fields, onBack }) {
                       variant="outlined"
                       margin="normal"
                       fullWidth
-                      InputProps={{ style: { color: "#ffffff" } }}
-                      InputLabelProps={{ style: { color: "#ffffff" } }}
+                      InputProps={{
+                        style: { color: isDarkMode ? "#ffffff" : "#000000" },
+                      }}
+                      InputLabelProps={{
+                        style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+                      }}
                       sx={{
-                        "& .MuiOutlinedInput-root fieldset": {
-                          borderColor: "#ffffff",
+                        "& .MuiOutlinedInput-root": {
+                          backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                          "& fieldset": {
+                            borderColor: isDarkMode ? "#ffffff" : "#000000",
+                          },
                         },
                       }}
                     />
@@ -367,16 +658,24 @@ function FormularioPadrao({ title, fields, onBack }) {
             </Box>
           ) : field.name === "fotoComprovante" ? (
             <Box key={field.name}>
-              <Typography sx={{ color: "#ffffff", mb: 1 }}>
+              <Typography
+                sx={{
+                  color: isDarkMode ? "#ffffff" : "#000000",
+                  fontWeight: "bold",
+                  mb: 1,
+                }}
+              >
                 {field.label}
               </Typography>
+
               <input
                 type="file"
-                multiple
                 accept="image/*"
+                capture="environment"
+                multiple
                 onChange={(event) => {
-                  const files = event.target.files;
-                  if (files) {
+                  const files = Array.from(event.target.files);
+                  if (files.length) {
                     setFormData({
                       ...formData,
                       [field.name]: [...(formData[field.name] || []), ...files],
@@ -386,6 +685,7 @@ function FormularioPadrao({ title, fields, onBack }) {
                 style={{ display: "none" }}
                 id="fotoComprovante-input"
               />
+
               <label htmlFor="fotoComprovante-input">
                 <Button
                   variant="contained"
@@ -395,11 +695,10 @@ function FormularioPadrao({ title, fields, onBack }) {
                     "&:hover": { backgroundColor: "#198754" },
                   }}
                 >
-                  Adicionar Comprovante 📄
+                  📷 Tirar Foto do Comprovante
                 </Button>
               </label>
 
-              {/* Exibir lista de arquivos selecionados */}
               {formData[field.name] && formData[field.name].length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   {formData[field.name].map((file, index) => (
@@ -416,7 +715,7 @@ function FormularioPadrao({ title, fields, onBack }) {
                       }}
                     >
                       <Typography sx={{ color: "#ffffff" }}>
-                        📄 {file.name}
+                        📷 {file.name}
                       </Typography>
                       <Button
                         onClick={() => {
@@ -434,38 +733,6 @@ function FormularioPadrao({ title, fields, onBack }) {
                 </Box>
               )}
             </Box>
-          ) : field.name === "peso" ? (
-            <Tooltip title="Informe o peso em KG" arrow key={field.name}>
-              <NumericFormat
-                name={field.name}
-                value={formData[field.name]}
-                onValueChange={(values) =>
-                  setFormData({ ...formData, [field.name]: values.value })
-                }
-                label={field.label}
-                customInput={TextField}
-                variant="outlined"
-                margin="normal"
-                fullWidth
-                allowNegative={false}
-                thousandSeparator="."
-                decimalSeparator=","
-                suffix=" KG"
-                InputProps={{
-                  style: { color: "#ffffff" },
-                }}
-                InputLabelProps={{
-                  style: { color: "#ffffff" },
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
-                  },
-                }}
-              />
-            </Tooltip>
           ) : field.name === "tarifa" ? (
             <Tooltip title="Informe a tarifa em R$" arrow key={field.name}>
               <NumericFormat
@@ -484,16 +751,54 @@ function FormularioPadrao({ title, fields, onBack }) {
                 decimalSeparator=","
                 prefix="R$ "
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
+          ) : field.name === "valorServicos" ? (
+            <Tooltip
+              title="Informe o valor dos serviços em R$"
+              arrow
+              key={field.name}
+            >
+              <NumericFormat
+                name={field.name}
+                value={formData[field.name]}
+                onValueChange={(values) =>
+                  setFormData({ ...formData, [field.name]: values.value })
+                }
+                label={field.label}
+                customInput={TextField}
+                variant="outlined"
+                margin="normal"
+                fullWidth
+                allowNegative={false}
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="R$ "
+                InputProps={{
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
+                }}
+                InputLabelProps={{
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -520,16 +825,56 @@ function FormularioPadrao({ title, fields, onBack }) {
                 allowLeadingZeros={false}
                 isNumericString={true}
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
+          ) : field.name === "peso" ? (
+            <Tooltip
+              title="Informe o peso em KG (ex: 70.5)"
+              arrow
+              key={field.name}
+            >
+              <NumericFormat
+                name={field.name}
+                value={formData[field.name]}
+                onValueChange={(values) =>
+                  setFormData({ ...formData, [field.name]: values.value })
+                }
+                label={field.label}
+                customInput={TextField}
+                variant="outlined"
+                margin="normal"
+                fullWidth
+                allowNegative={false}
+                decimalScale={3} // Permite até 3 casas decimais
+                fixedDecimalScale={false} // Não força casas decimais
+                allowLeadingZeros={false}
+                isNumericString={true}
+                suffix=" KG" // Adiciona " KG" ao final
+                InputProps={{
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
+                }}
+                InputLabelProps={{
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -552,20 +897,21 @@ function FormularioPadrao({ title, fields, onBack }) {
                 margin="normal"
                 fullWidth
                 allowNegative={false}
-                decimalScale={0} // Sem casas decimais
+                decimalScale={0}
                 allowLeadingZeros={false}
                 isNumericString={true}
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -592,16 +938,17 @@ function FormularioPadrao({ title, fields, onBack }) {
                 decimalSeparator=","
                 suffix=" L"
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -609,7 +956,7 @@ function FormularioPadrao({ title, fields, onBack }) {
           ) : field.name === "valorAbastecimento" &&
             title === "Abastecimento" ? (
             <Tooltip
-              title="Informe o valor do abastecimento"
+              title="Informe o valor do abastecimento em R$."
               arrow
               key={field.name}
             >
@@ -629,16 +976,17 @@ function FormularioPadrao({ title, fields, onBack }) {
                 decimalSeparator=","
                 prefix="R$ "
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -661,16 +1009,17 @@ function FormularioPadrao({ title, fields, onBack }) {
                 margin="normal"
                 fullWidth
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               >
@@ -696,10 +1045,12 @@ function FormularioPadrao({ title, fields, onBack }) {
             </Tooltip>
           ) : title === "Contatos Filiais" ? (
             <Box key={title} sx={{ mt: 2 }}>
-              <Typography variant="h6" sx={{ color: "#ffffff", mb: 2 }}>
+              <Typography
+                variant="h6"
+                sx={{ color: isDarkMode ? "#ffffff" : "#091f33", mb: 2, textAlign: "center"}}
+              >
                 Lista de Contatos das Filiais
               </Typography>
-
               <TableContainer
                 component={Paper}
                 sx={{ backgroundColor: "#052c65", borderRadius: 2 }}
@@ -716,7 +1067,6 @@ function FormularioPadrao({ title, fields, onBack }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/* Exemplos de endereços e telefones de filiais */}
                     <TableRow>
                       <TableCell sx={{ color: "#ffffff" }}>
                         Av. Paulista, 1000 - São Paulo, SP
@@ -808,7 +1158,9 @@ function FormularioPadrao({ title, fields, onBack }) {
             </Box>
           ) : field.name === "fotoNotaFiscal" ? (
             <Box key={field.name}>
-              <Typography sx={{ color: "#ffffff", mb: 1 }}>
+              <Typography
+                sx={{ color: isDarkMode ? "#ffffff" : "#000000", mb: 1 }}
+              >
                 {field.label}
               </Typography>
               <input
@@ -852,7 +1204,6 @@ function FormularioPadrao({ title, fields, onBack }) {
                 </Button>
               </Box>
 
-              {/* Exibir prévia das fotos tiradas */}
               {formData[field.name] && formData[field.name].length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   {formData[field.name].map((file, index) => (
@@ -913,16 +1264,17 @@ function FormularioPadrao({ title, fields, onBack }) {
                 decimalSeparator=","
                 prefix="R$ "
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -946,20 +1298,21 @@ function FormularioPadrao({ title, fields, onBack }) {
                 margin="normal"
                 fullWidth
                 allowNegative={false}
-                decimalScale={0} // Sem casas decimais
+                decimalScale={0}
                 allowLeadingZeros={false}
                 isNumericString={true}
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -984,54 +1337,238 @@ function FormularioPadrao({ title, fields, onBack }) {
                 allowNegative={false}
                 isNumericString={true}
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
             </Tooltip>
-          ) : field.name === "consultaInicio" ||
-            field.name === "consultaFim" ? (
-            <Tooltip
-              title="Selecione a data no calendário"
-              arrow
-              key={field.name}
+          ) : title === "Consultas" ? (
+            <Box
+              key={title}
+              sx={{
+                mt: 6,
+                px: 2, 
+                overflowX: "hidden",
+              }}
             >
-              <TextField
-                name={field.name}
-                label={field.label}
-                type="date"
-                value={formData[field.name] || ""}
-                onChange={(event) =>
-                  setFormData({ ...formData, [field.name]: event.target.value })
-                }
-                variant="outlined"
-                margin="normal"
-                fullWidth
-                InputProps={{
-                  style: { color: "#ffffff" },
-                }}
-                InputLabelProps={{
-                  shrink: true,
-                  style: { color: "#ffffff" },
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+              {(() => {
+                const [filtroStatus, setFiltroStatus] = useState("todos");
+
+                const dadosConsultas = [
+                  {
+                    id: 1,
+                    inicio: "01/02/2024",
+                    fim: "10/02/2024",
+                    origem: "São Paulo - SP",
+                    destino: "Rio de Janeiro - RJ",
+                    status: "Concluído",
                   },
-                }}
-              />
-            </Tooltip>
+                  {
+                    id: 2,
+                    inicio: "05/02/2024",
+                    fim: "15/02/2024",
+                    origem: "Curitiba - PR",
+                    destino: "Porto Alegre - RS",
+                    status: "Pendente",
+                  },
+                  {
+                    id: 3,
+                    inicio: "07/02/2024",
+                    fim: "17/02/2024",
+                    origem: "Belo Horizonte - MG",
+                    destino: "Brasília - DF",
+                    status: "Cancelado",
+                  },
+                  {
+                    id: 4,
+                    inicio: "08/02/2024",
+                    fim: "18/02/2024",
+                    origem: "Salvador - BA",
+                    destino: "Recife - PE",
+                    status: "Concluído",
+                  },
+                  {
+                    id: 5,
+                    inicio: "12/02/2024",
+                    fim: "22/02/2024",
+                    origem: "Manaus - AM",
+                    destino: "Fortaleza - CE",
+                    status: "Pendente",
+                  },
+                ];
+
+                const dadosFiltrados =
+                  filtroStatus === "todos"
+                    ? dadosConsultas
+                    : dadosConsultas.filter(
+                        (item) => item.status === filtroStatus
+                      );
+
+                return (
+                  <>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 2,
+                        mb: 4, 
+                      }}
+                    >
+                      <Select
+                        value={filtroStatus}
+                        onChange={(e) => setFiltroStatus(e.target.value)}
+                        displayEmpty
+                        variant="outlined"
+                        sx={{
+                          backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                          color: isDarkMode ? "#ffffff" : "#000000",
+                          "& fieldset": {
+                            borderColor: isDarkMode ? "#ffffff" : "#000000",
+                          },
+                        }}
+                      >
+                        <MenuItem value="todos">Todos</MenuItem>
+                        <MenuItem value="Concluído">🟢 Concluído</MenuItem>
+                        <MenuItem value="Pendente">🟡 Pendente</MenuItem>
+                        <MenuItem value="Cancelado">🔴 Cancelado</MenuItem>
+                      </Select>
+                    </Box>
+
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        color: isDarkMode ? "#ffffff" : "#091f33",
+                        fontWeight: "bold",
+                        mt: 4, 
+                        mb: 4, 
+                      }}
+                    >
+                      Histórico de Consultas
+                    </Typography>
+
+                    <TableContainer
+                      component={Paper}
+                      sx={{
+                        backgroundColor: "#052c65",
+                        borderRadius: 2,
+                        mt: 2,
+                        maxWidth: "100%",
+                        overflowX: "auto", 
+                      }}
+                    >
+                      <Table
+                        sx={{
+                          minWidth: 500,
+                          tableLayout: "auto", 
+                        }}
+                      >
+                        <TableHead>
+                          <TableRow>
+                            <TableCell
+                              sx={{
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                                textAlign: "center",
+                              }}
+                            >
+                              Período
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                                textAlign: "center",
+                              }}
+                            >
+                              Origem
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                                textAlign: "center",
+                              }}
+                            >
+                              Destino
+                            </TableCell>
+                            <TableCell
+                              sx={{
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                                textAlign: "center",
+                              }}
+                            >
+                              Status
+                            </TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {dadosFiltrados.map((consulta) => (
+                            <TableRow key={consulta.id}>
+                              <TableCell
+                                sx={{ color: "#ffffff", textAlign: "center" }}
+                              >
+                                {consulta.inicio} - {consulta.fim}
+                              </TableCell>
+                              <TableCell
+                                sx={{ color: "#ffffff", textAlign: "center" }}
+                              >
+                                {consulta.origem}
+                              </TableCell>
+                              <TableCell
+                                sx={{ color: "#ffffff", textAlign: "center" }}
+                              >
+                                {consulta.destino}
+                              </TableCell>
+                              <TableCell
+                                sx={{
+                                  fontWeight: "bold",
+                                  textAlign: "center", 
+                                  color:
+                                    consulta.status === "Concluído"
+                                      ? "#28A745"
+                                      : consulta.status === "Pendente"
+                                        ? "#FFC107"
+                                        : "#DC3545",
+                                }}
+                              >
+                                {consulta.status === "Concluído" && (
+                                  <>
+                                    🟢 <span>Concluído</span>
+                                  </>
+                                )}
+                                {consulta.status === "Pendente" && (
+                                  <>
+                                    🟡 <span>Pendente</span>
+                                  </>
+                                )}
+                                {consulta.status === "Cancelado" && (
+                                  <>
+                                    🔴 <span>Cancelado</span>
+                                  </>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                );
+              })()}
+            </Box>
           ) : field.name === "ctrc" ? (
             <Tooltip
               title="Código do Conhecimento de Transporte Rodoviário de Carga (CTRC)."
@@ -1052,16 +1589,17 @@ function FormularioPadrao({ title, fields, onBack }) {
                 allowNegative={false}
                 isNumericString={true}
                 InputProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#ffffff" : "#000000" },
                 }}
                 InputLabelProps={{
-                  style: { color: "#ffffff" },
+                  style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "#ffffff" },
-                    "&:hover fieldset": { borderColor: "#ffffff" },
-                    "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                    backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                    "& fieldset": {
+                      borderColor: isDarkMode ? "#ffffff" : "#000000",
+                    },
                   },
                 }}
               />
@@ -1077,13 +1615,18 @@ function FormularioPadrao({ title, fields, onBack }) {
               margin="normal"
               fullWidth
               select={field.select}
-              InputProps={{ style: { color: "#ffffff" } }}
-              InputLabelProps={{ style: { color: "#ffffff" } }}
+              InputProps={{
+                style: { color: isDarkMode ? "#ffffff" : "#000000" },
+              }}
+              InputLabelProps={{
+                style: { color: isDarkMode ? "#cfcfcf" : "#000000" },
+              }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "#ffffff" },
-                  "&:hover fieldset": { borderColor: "" },
-                  "&.Mui-focused fieldset": { borderColor: "#ffffff" },
+                  backgroundColor: isDarkMode ? "#1e1e1e" : "#ffffff",
+                  "& fieldset": {
+                    borderColor: isDarkMode ? "#ffffff" : "#000000",
+                  },
                 },
               }}
             >
@@ -1096,6 +1639,7 @@ function FormularioPadrao({ title, fields, onBack }) {
             </TextField>
           );
         })}
+
         <Button
           type="submit"
           variant="contained"
@@ -1107,6 +1651,11 @@ function FormularioPadrao({ title, fields, onBack }) {
               backgroundColor: "#198754",
             },
           }}
+          onClick={handleSubmit}
+          disabled={title === "Consultas" || title === "Contatos Filiais"} // validação para desabilitar o botão enviar para tal tópico, já que está globalmente.
+          style={{
+            display: title === "Consultas" || title === "Contatos Filiais" ? "none" : "block", // Oculta o botão em "Consultas e contatos".
+          }}
         >
           Enviar
         </Button>
@@ -1115,10 +1664,8 @@ function FormularioPadrao({ title, fields, onBack }) {
   );
 }
 
-// Tela principal de navegação
-function MainMenu({ onNavigate }) {
+function MainMenu({ onNavigate, isDarkMode }) {
   const menuItems = [
-    // { title: "Nova Ordem", icon: <DashboardIcon />, path: "nova-ordem" },
     {
       title: "Nova Viagem",
       icon: <LocalShippingIcon />,
@@ -1151,14 +1698,10 @@ function MainMenu({ onNavigate }) {
       icon: <Business />,
       path: "consultas",
     },
-    // { title: "Motorista", icon: <PeopleIcon />, path: "motorista" },
   ];
 
   return (
     <Box sx={{ p: 4, textAlign: "center" }}>
-      {/* <Typography variant="h4" sx={{ mb: 4 }}>
-        Menu Principal
-      </Typography> */}
       <Grid container spacing={3} justifyContent="center">
         {menuItems.map((item) => (
           <Grid item xs={12} sm={6} md={4} key={item.path}>
@@ -1177,7 +1720,14 @@ function MainMenu({ onNavigate }) {
               onClick={() => onNavigate(item.path)}
             >
               {item.icon}
-              <Typography variant="h6" sx={{ mt: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  mt: 1,
+                  fontWeight: "bold",
+                  color: "#ffffff",
+                }}
+              >
                 {item.title}
               </Typography>
             </Paper>
@@ -1189,29 +1739,63 @@ function MainMenu({ onNavigate }) {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = React.useState("menu");
-  const theme = React.useMemo(() => createDemoTheme(false), []);
+  const [currentPage, setCurrentPage] = useState("menu");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const theme = useMemo(() => createDemoTheme(isDarkMode), [isDarkMode]);
 
   const handleNavigate = (path) => {
     setCurrentPage(path);
   };
 
   const renderContent = () => {
-    if (currentPage === "menu") return <MainMenu onNavigate={handleNavigate} />;
+    if (currentPage === "menu") {
+      return <MainMenu onNavigate={handleNavigate} />;
+    }
     const formConfig = formularios[currentPage];
     return formConfig ? (
       <FormularioPadrao
         title={formConfig.title}
         fields={formConfig.fields}
         onBack={() => setCurrentPage("menu")}
+        isDarkMode={isDarkMode}
       />
     ) : null;
   };
 
+  // useEffect(() => {
+  //   document.body.style.overflow = "hidden";
+  //   return () => {
+  //     document.body.style.overflow = "auto";
+  //   };
+  // }, []);
+
   return (
     <ThemeProvider theme={theme}>
-      <Header />
-      {renderContent()}
+      <CssBaseline />
+      <Header
+        isDarkMode={isDarkMode}
+        toggleTheme={() => setIsDarkMode(!isDarkMode)}
+      />
+      <Box
+        sx={{
+          p: 3,
+          minHeight: "100vh",
+          backgroundColor: theme.palette.background.default,
+          transition: "background-color 0.5s ease, color 0.5s ease",
+        }}
+      >
+        {currentPage === "menu" ? (
+          <MainMenu onNavigate={handleNavigate} isDarkMode={isDarkMode} />
+        ) : (
+          <FormularioPadrao
+            title={formularios[currentPage]?.title}
+            fields={formularios[currentPage]?.fields}
+            onBack={() => setCurrentPage("menu")}
+            isDarkMode={isDarkMode}
+          />
+        )}
+      </Box>
     </ThemeProvider>
   );
 }
